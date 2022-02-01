@@ -1,0 +1,77 @@
+version: "3.1"
+
+services:
+  mysql:
+    container_name: mysql-library
+    networks: 
+      - library-network
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-library-vol:/var/lib/mysql
+    image: 'mysql:8.0.27'
+
+  mongo:
+    container_name: mongodb-reviews
+    networks: 
+      - library-network
+    ports:
+      - '27017:27017'
+    volumes:
+      - 'mongodb-reviews-vol:/data/configdb'
+    image: 'mongo:5.0.5'
+
+  backend-reviews:
+    container_name: backend-reviews
+    networks: 
+      - library-network
+    build:
+      context: persistent-microservices/backend-reviews
+      dockerfile: ./docker/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+
+  front-reviews-library:
+    container_name:  front-reviews-library
+    networks: 
+      - library-network
+    build:
+      context: frontends/frontend-reviews
+      dockerfile: ./docker/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend-reviews
+
+  # frontend-catalog-library:
+  #   container_name: frontend-catalog-library
+  #   restart: always
+  #   build: 
+  #     context: .
+  #     dockerfile: frontends/frontend-catalog-library/docker/Dockerfile
+  #   image: nginx:1.21.4-alpine
+  #   working_dir: /app
+
+volumes:
+  mysql-library-vol:
+    external: false
+  mongodb-reviews-vol:
+    external: false
+networks:
+  library-network:
+    external: true
+  # backend-catalog-library:
+  #   container_name: backend-catalog-library
+  #   # image: "maven:3.6.3"
+  #   # working_dir: /usr/src/app
+  #   build: 
+  #     network: library-network
+  #     context: persistent-microservices/backend-catalog-library/docker
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8081:8081"
+  #   restart: always
